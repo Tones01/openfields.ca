@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-dark: #0d1b2a;
+  --color-brand-green: #2d6a4f;
+  --color-brand-green-light: #40916c;
+  --color-brand-accent: #52b788;
+  --color-brand-gold: #d4a853;
+  --color-brand-surface: #f8f9f7;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0d1b2a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
