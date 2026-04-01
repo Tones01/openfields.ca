@@ -87,6 +87,26 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Partners bar ── */}
+      <section className="bg-white py-10 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-6">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 text-center mb-7">
+            Our Partners
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
+            {["Partner A", "Partner B", "Partner C", "Partner D", "Partner E"].map((name) => (
+              <div
+                key={name}
+                className="h-8 w-24 rounded bg-slate-100 flex items-center justify-center"
+                title={name}
+              >
+                <span className="text-[10px] text-slate-400 font-medium tracking-wide">{name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Why Open Fields ── */}
       <section className="bg-[#f8f9f7] py-20 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6">
