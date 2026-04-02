@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   Truck,
@@ -8,8 +9,54 @@ import {
   Package,
   TrendingUp,
 } from "lucide-react";
+import { client } from "@/sanity/client";
+import { urlFor } from "@/sanity/image";
 
-export default function HomePage() {
+export const revalidate = 60;
+
+/* ─── Sanity fetch helpers ─── */
+
+type Partner = {
+  _id: string;
+  name: string;
+  logo?: { asset: { _ref: string } };
+  url?: string;
+};
+
+type InsightPost = {
+  _id: string;
+  title: string;
+  postType: string;
+  slug: { current: string };
+  cover?: { asset: { _ref: string } };
+};
+
+async function getPartners(): Promise<Partner[]> {
+  return client.fetch(
+    `*[_type == "partner"] | order(order asc) { _id, name, logo, url }`,
+    {},
+    { next: { revalidate: 60 } }
+  );
+}
+
+async function getFeaturedInsights(): Promise<InsightPost[]> {
+  return client.fetch(
+    `*[_type == "insightPost"] | order(featured desc, publishedAt desc)[0..1] {
+      _id, title, postType, slug, cover
+    }`,
+    {},
+    { next: { revalidate: 60 } }
+  );
+}
+
+/* ─── Page ─── */
+
+export default async function HomePage() {
+  const [partners, insights] = await Promise.all([
+    getPartners(),
+    getFeaturedInsights(),
+  ]);
+
   return (
     <>
       {/* ── Hero ── */}
@@ -86,6 +133,49 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Partners bar ── */}
+      {partners.length > 0 && (
+        <section className="bg-white py-10 border-b border-slate-100">
+          <div className="max-w-7xl mx-auto px-6">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 text-center mb-7">
+              Our Partners
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+              {partners.map((p) =>
+                p.logo ? (
+                  <a
+                    key={p._id}
+                    href={p.url ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                    title={p.name}
+                  >
+                    <Image
+                      src={urlFor(p.logo).height(40).url()}
+                      alt={p.name}
+                      width={120}
+                      height={40}
+                      className="h-8 w-auto object-contain"
+                    />
+                  </a>
+                ) : (
+                  <div
+                    key={p._id}
+                    className="h-8 px-4 rounded bg-slate-100 flex items-center justify-center"
+                    title={p.name}
+                  >
+                    <span className="text-[10px] text-slate-400 font-medium tracking-wide">
+                      {p.name}
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Why Open Fields ── */}
       <section className="bg-[#f8f9f7] py-20 border-b border-slate-100">
@@ -200,14 +290,22 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <InsightCard
-              type="Market Report"
-              title="Prairie cannabis market overview"
-            />
-            <InsightCard
-              type="Regulatory Guide"
-              title="Entering SK and MB as a licensed producer"
-            />
+            {insights.length > 0 ? (
+              insights.map((post) => (
+                <InsightCard
+                  key={post._id}
+                  type={post.postType}
+                  title={post.title}
+                  cover={post.cover}
+                  href={`/insights/${post.slug.current}`}
+                />
+              ))
+            ) : (
+              <>
+                <InsightCard type="Market Report" title="Prairie cannabis market overview" />
+                <InsightCard type="Regulatory Guide" title="Entering SK and MB as a licensed producer" />
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -291,14 +389,12 @@ function ProvinceCard({
       href={href}
       className="group relative bg-[#0d1b2a] text-white rounded-2xl p-8 overflow-hidden hover:opacity-95 transition-opacity"
     >
-      {/* Map placeholder */}
       <div
         className="absolute top-4 right-4 w-32 h-24 rounded-lg opacity-20 border border-white/20 flex items-center justify-center"
         style={{ background: `${accent}20` }}
       >
         <span className="text-[10px] text-white/50 font-medium uppercase tracking-widest">Map</span>
       </div>
-
       <div
         className="absolute inset-0 opacity-5"
         style={{
@@ -323,14 +419,32 @@ function ProvinceCard({
   );
 }
 
-function InsightCard({ type, title }: { type: string; title: string }) {
-  return (
+function InsightCard({
+  type,
+  title,
+  cover,
+  href,
+}: {
+  type: string;
+  title: string;
+  cover?: { asset: { _ref: string } };
+  href?: string;
+}) {
+  const inner = (
     <div className="bg-[#f8f9f7] border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 transition-colors">
-      {/* Cover placeholder */}
-      <div className="h-36 bg-[#f0f7f4] border-b border-slate-200 flex items-center justify-center">
-        <span className="text-xs text-[#6aaf91] font-medium tracking-wide uppercase">
-          {type === "Market Report" ? "Report cover" : "Guide cover"}
-        </span>
+      <div className="h-36 bg-[#f0f7f4] border-b border-slate-200 relative flex items-center justify-center overflow-hidden">
+        {cover ? (
+          <Image
+            src={urlFor(cover).width(600).height(144).url()}
+            alt={title}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <span className="text-xs text-[#6aaf91] font-medium tracking-wide uppercase">
+            {type === "Market Report" ? "Report cover" : "Guide cover"}
+          </span>
+        )}
       </div>
       <div className="p-5">
         <span className="inline-block text-[10px] font-semibold uppercase tracking-widest text-[#2d6a4f] bg-[#f0f7f4] border border-[#cce4d8] px-2 py-0.5 rounded mb-3">
@@ -340,4 +454,6 @@ function InsightCard({ type, title }: { type: string; title: string }) {
       </div>
     </div>
   );
+
+  return href ? <Link href={href}>{inner}</Link> : inner;
 }
